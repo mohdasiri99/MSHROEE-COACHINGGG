@@ -4,409 +4,276 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>مشروع الكوتشينج التعليمي - تمكين</title>
-    
-    <!-- React & ReactDOM -->
-    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
-    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
-    
-    <!-- Babel for JSX -->
-    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-    
-    <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
-    
-    <!-- Custom Styles for Print -->
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800&display=swap');
+        body { font-family: 'Tajawal', sans-serif; background-color: #f3f4f6; }
         
-        body {
-            font-family: 'Tajawal', sans-serif;
-            background-color: #f3f4f6;
-        }
+        /* Animation */
+        .fade-in { animation: fadeIn 0.5s ease-out forwards; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
 
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(10px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-        .animate-fadeIn {
-            animation: fadeIn 0.5s ease-out forwards;
-        }
-
+        /* Print Styles */
         @media print {
             @page { size: landscape; margin: 0; }
-            body { -webkit-print-color-adjust: exact; print-color-adjust: exact; background: white; }
+            body { background: white; -webkit-print-color-adjust: exact; }
             .no-print { display: none !important; }
             .print-only { display: block !important; }
-            .slide-page { break-after: page; page-break-after: always; height: 100vh; width: 100vw; display: flex; flex-direction: column; }
-            /* Hide scrollbars in print */
-            ::-webkit-scrollbar { display: none; }
+            .slide-container { break-after: page; page-break-after: always; height: 100vh; width: 100vw; display: flex; flex-direction: column; }
         }
         .print-only { display: none; }
     </style>
 </head>
-<body>
-    <div id="root"></div>
+<body class="flex flex-col items-center justify-center min-h-screen p-4 print:p-0 print:bg-white">
 
-    <script type="text/babel">
-        const { useState, useEffect } = React;
+    <!-- Interactive Container -->
+    <div id="presentation-frame" class="relative w-full max-w-5xl aspect-video bg-white rounded-xl shadow-2xl overflow-hidden flex flex-col no-print">
+        
+        <!-- Header -->
+        <div class="flex justify-between items-center py-4 px-8 border-b-4 border-[#006C35] bg-white shadow-sm">
+            <div class="flex flex-col text-right">
+                <span class="text-xs text-gray-500 font-bold tracking-wider">المملكة العربية السعودية</span>
+                <span class="text-sm font-bold text-[#006C35]">وزارة التعليم</span>
+            </div>
+            <div class="flex items-center gap-4">
+                <div class="h-10 w-24 bg-gray-200 rounded flex items-center justify-center text-[10px] text-gray-500 font-bold border border-gray-300">رؤية 2030</div>
+                <div class="h-10 w-10 bg-[#006C35] rounded-full flex items-center justify-center text-white font-bold text-xs">MOE</div>
+            </div>
+        </div>
 
-        // --- Icons Definitions (Inline SVG to avoid dependency issues on GitHub) ---
-        const IconWrapper = ({ children, className, ...props }) => (
-            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className} {...props}>
-                {children}
-            </svg>
-        );
+        <!-- Slides Area -->
+        <div class="flex-1 relative overflow-hidden bg-white bg-[radial-gradient(#e5e7eb_1px,transparent_1px)] [background-size:16px_16px]">
+            <div id="slide-content" class="absolute inset-0 p-8">
+                <!-- Content injected by JS -->
+            </div>
+        </div>
 
-        const ChevronLeft = (props) => <IconWrapper {...props}><path d="m15 18-6-6 6-6"/></IconWrapper>;
-        const ChevronRight = (props) => <IconWrapper {...props}><path d="m9 18 6-6-6-6"/></IconWrapper>;
-        const BarChart3 = (props) => <IconWrapper {...props}><path d="M3 3v18h18"/><path d="M18 17V9"/><path d="M13 17V5"/><path d="M8 17v-3"/></IconWrapper>;
-        const Users = (props) => <IconWrapper {...props}><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></IconWrapper>;
-        const Target = (props) => <IconWrapper {...props}><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></IconWrapper>;
-        const CheckCircle2 = (props) => <IconWrapper {...props}><circle cx="12" cy="12" r="10"/><path d="m9 12 2 2 4-4"/></IconWrapper>;
-        const BookOpen = (props) => <IconWrapper {...props}><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></IconWrapper>;
-        const Award = (props) => <IconWrapper {...props}><circle cx="12" cy="8" r="6"/><path d="M15.477 12.89 17 22l-5-3-5 3 1.523-9.11"/></IconWrapper>;
-        const TrendingUp = (props) => <IconWrapper {...props}><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></IconWrapper>;
-        const Calendar = (props) => <IconWrapper {...props}><rect width="18" height="18" x="3" y="4" rx="2" ry="2"/><line x1="16" x2="16" y1="2" y2="6"/><line x1="8" x2="8" y1="2" y2="6"/><line x1="3" x2="21" y1="10" y2="10"/></IconWrapper>;
-        const ArrowLeft = (props) => <IconWrapper {...props}><path d="m12 19-7-7 7-7"/><path d="M19 12H5"/></IconWrapper>;
-        const Printer = (props) => <IconWrapper {...props}><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect width="12" height="8" x="6" y="14"/></IconWrapper>;
-        const Briefcase = (props) => <IconWrapper {...props}><rect width="20" height="14" x="2" y="7" rx="2" ry="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></IconWrapper>;
+        <!-- Footer -->
+        <div class="absolute bottom-0 w-full py-2 px-8 bg-white border-t border-gray-200 flex justify-between items-center text-xs text-gray-500">
+            <span>مشروع الكوتشينج التعليمي (ضمن مستهدفات برنامج تمكين)</span>
+            <div class="flex gap-2">الشريحة <span id="current-slide-num">1</span> من 9</div>
+            <span>إعداد: أ. محمد علي عسيري</span>
+        </div>
 
-        // --- Main Component ---
-        const SlideDeck = () => {
-            const [currentSlide, setCurrentSlide] = useState(0);
+        <!-- Controls -->
+        <div class="absolute bottom-4 left-8 flex gap-2 z-50">
+            <button onclick="window.print()" class="p-2 rounded-full bg-gray-700 text-white hover:bg-gray-900 transition-all shadow-lg mr-2" title="طباعة / PDF">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect width="12" height="8" x="6" y="14"/></svg>
+            </button>
+            <button onclick="prevSlide()" class="p-2 rounded-full bg-[#006C35] text-white hover:bg-green-800 transition-all shadow-lg">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg>
+            </button>
+            <button onclick="nextSlide()" class="p-2 rounded-full bg-[#006C35] text-white hover:bg-green-800 transition-all shadow-lg">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
+            </button>
+        </div>
+    </div>
 
-            const totalSlides = 9;
+    <!-- Print Version (Hidden on Screen) -->
+    <div id="print-container" class="print-only w-full"></div>
 
-            const nextSlide = () => {
-                if (currentSlide < totalSlides - 1) setCurrentSlide(currentSlide + 1);
-            };
+    <div class="mt-4 text-gray-500 text-sm no-print">استخدم زر الطابعة لحفظ الملف كـ PDF • استخدم الأسهم للتنقل</div>
 
-            const prevSlide = () => {
-                if (currentSlide > 0) setCurrentSlide(currentSlide - 1);
-            };
-
-            // Keyboard navigation
-            useEffect(() => {
-                const handleKeyDown = (e) => {
-                if (e.key === 'ArrowLeft') nextSlide(); // RTL Logic
-                if (e.key === 'ArrowRight') prevSlide(); // RTL Logic
-                if (e.key === 'Space') nextSlide();
-                };
-                window.addEventListener('keydown', handleKeyDown);
-                return () => window.removeEventListener('keydown', handleKeyDown);
-            }, [currentSlide]);
-
-            const handlePrint = () => {
-                window.print();
-            };
-
-            const Header = () => (
-                <div className="flex justify-between items-center py-4 px-8 border-b-4 border-[#006C35] bg-white shadow-sm print:border-b-2 print:py-2">
-                <div className="flex flex-col text-right">
-                    <span className="text-xs text-gray-500 font-bold tracking-wider">المملكة العربية السعودية</span>
-                    <span className="text-sm font-bold text-[#006C35]">وزارة التعليم</span>
+    <!-- Logic -->
+    <script>
+        // --- Data ---
+        const slidesData = [
+            // Slide 1
+            `
+            <div class="h-full flex flex-col justify-center items-center text-center space-y-8 fade-in">
+                <div class="w-24 h-24 bg-[#006C35] rounded-full flex items-center justify-center shadow-lg mb-4">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
                 </div>
-                <div className="flex items-center gap-4">
-                    <div className="h-10 w-24 bg-gray-200 rounded flex items-center justify-center text-[10px] text-gray-500 font-bold border border-gray-300 print:grayscale">
-                    رؤية 2030
+                <h1 class="text-5xl font-extrabold text-[#006C35] leading-tight">مشروع الكوتشينج التعليمي</h1>
+                <h2 class="text-2xl text-gray-600 font-medium max-w-2xl">بناء قدرات المعلمين وتحقيق الاستدامة المهنية</h2>
+                <div class="inline-block bg-[#8DC63F] bg-opacity-20 text-[#006C35] px-4 py-2 rounded-full font-bold text-sm border border-[#8DC63F]">متوافق مع أهداف برنامج "تمكين" الوطني</div>
+                <div class="mt-8 p-6 bg-white rounded-lg shadow-md border-r-4 border-[#8DC63F]">
+                    <p class="text-lg font-bold text-gray-800">إعداد وتقديم:</p>
+                    <p class="text-xl text-[#006C35] font-bold mt-2">محمد علي عبدالله عسيري</p>
+                    <p class="text-sm text-gray-500 mt-1">معلم خبير | كوتش محترف معتمد (PCC - ICF)</p>
+                </div>
+            </div>
+            `,
+            // Slide 2
+            `
+            <div class="h-full px-12 pt-8 fade-in">
+                <h2 class="text-3xl font-bold text-[#006C35] mb-2 border-b pb-2 inline-block">التحدي: فجوة الأثر</h2>
+                <p class="text-gray-600 mb-12 text-lg">لماذا نحتاج إلى الانتقال من "التدريب" إلى "التمكين"؟</p>
+                <div class="flex justify-center items-end gap-16 h-80 mt-8">
+                    <div class="flex flex-col items-center group">
+                        <div class="text-xl font-bold text-gray-500 mb-2">10%</div>
+                        <div class="w-32 bg-gray-300 rounded-t-lg relative overflow-hidden h-[32px] border border-gray-400"><div class="absolute bottom-0 w-full h-full bg-gray-400 opacity-50"></div></div>
+                        <p class="mt-4 font-bold text-gray-600 text-center">التدريب التقليدي</p>
                     </div>
-                    <div className="h-10 w-10 bg-[#006C35] rounded-full flex items-center justify-center text-white font-bold text-xs print:bg-black print:text-white">
-                    MOE
-                    </div>
-                </div>
-                </div>
-            );
-
-            const Footer = ({ slideNum }) => (
-                <div className="absolute bottom-0 w-full py-2 px-8 bg-white border-t border-gray-200 flex justify-between items-center text-xs text-gray-500 print:relative print:border-none print:mt-auto">
-                <span>مشروع الكوتشينج التعليمي (ضمن مستهدفات برنامج تمكين)</span>
-                <div className="flex gap-2">
-                    <span>الشريحة {slideNum} من {totalSlides}</span>
-                </div>
-                <span>إعداد: أ. محمد علي عسيري</span>
-                </div>
-            );
-
-            // --- Slides Content ---
-
-            // Slide 1: Cover
-            const Slide1 = () => (
-                <div className="h-full flex flex-col justify-center items-center text-center space-y-8 animate-fadeIn p-8">
-                <div className="w-24 h-24 bg-[#006C35] rounded-full flex items-center justify-center shadow-lg mb-4 print:shadow-none">
-                    <BookOpen className="text-white w-12 h-12" />
-                </div>
-                <h1 className="text-5xl font-extrabold text-[#006C35] leading-tight">
-                    مشروع الكوتشينج التعليمي
-                </h1>
-                <h2 className="text-2xl text-gray-600 font-medium max-w-2xl">
-                    بناء قدرات المعلمين وتحقيق الاستدامة المهنية
-                </h2>
-                <div className="inline-block bg-[#8DC63F] bg-opacity-20 text-[#006C35] px-4 py-2 rounded-full font-bold text-sm border border-[#8DC63F]">
-                    متوافق مع أهداف برنامج "تمكين" الوطني
-                </div>
-                <div className="mt-8 p-6 bg-white rounded-lg shadow-md border-r-4 border-[#8DC63F] print:shadow-none print:border">
-                    <p className="text-lg font-bold text-gray-800">إعداد وتقديم:</p>
-                    <p className="text-xl text-[#006C35] font-bold mt-2">محمد علي عبدالله عسيري</p>
-                    <p className="text-sm text-gray-500 mt-1">معلم خبير | كوتش محترف معتمد (PCC - ICF)</p>
-                </div>
-                </div>
-            );
-
-            // Slide 2: The Challenge (Data)
-            const Slide2 = () => (
-                <div className="h-full px-12 pt-8">
-                <h2 className="text-3xl font-bold text-[#006C35] mb-2 border-b pb-2 inline-block">التحدي: فجوة الأثر</h2>
-                <p className="text-gray-600 mb-12 text-lg">لماذا نحتاج إلى الانتقال من "التدريب" إلى "التمكين"؟</p>
-                
-                <div className="flex justify-center items-end gap-16 h-80 mt-8">
-                    <div className="flex flex-col items-center group">
-                    <div className="text-xl font-bold text-gray-500 mb-2">10%</div>
-                    <div className="w-32 bg-gray-300 rounded-t-lg relative overflow-hidden h-[32px] print:h-[32px] border border-gray-400">
-                        <div className="absolute bottom-0 w-full h-full bg-gray-400 opacity-50"></div>
-                    </div>
-                    <p className="mt-4 font-bold text-gray-600 text-center">التدريب التقليدي</p>
-                    <p className="text-xs text-gray-400 mt-1">انتقال الأثر للفصل</p>
-                    </div>
-
-                    <div className="mb-20 text-[#006C35]">
-                        <ArrowLeft size={40} strokeWidth={3} />
-                    </div>
-
-                    <div className="flex flex-col items-center group">
-                    <div className="text-4xl font-extrabold text-[#006C35] mb-2">95%</div>
-                    <div className="w-32 bg-[#006C35] rounded-t-lg relative overflow-hidden h-[300px] print:h-[300px] shadow-xl print:shadow-none">
-                        <div className="absolute bottom-0 w-full h-full bg-gradient-to-t from-green-900 to-[#006C35]"></div>
-                    </div>
-                    <p className="mt-4 font-bold text-[#006C35] text-center text-lg">الكوتشينج (التمكين)</p>
-                    <p className="text-xs text-gray-500 mt-1">انتقال الأثر للفصل</p>
+                    <div class="mb-20 text-[#006C35]"><svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="m12 19-7-7 7-7"/><path d="M19 12H5"/></svg></div>
+                    <div class="flex flex-col items-center group">
+                        <div class="text-4xl font-extrabold text-[#006C35] mb-2">95%</div>
+                        <div class="w-32 bg-[#006C35] rounded-t-lg relative overflow-hidden h-[300px] shadow-xl"><div class="absolute bottom-0 w-full h-full bg-gradient-to-t from-green-900 to-[#006C35]"></div></div>
+                        <p class="mt-4 font-bold text-[#006C35] text-center text-lg">الكوتشينج (التمكين)</p>
                     </div>
                 </div>
-                <p className="text-left text-xs text-gray-400 mt-12">* المصدر: دراسات Joyce & Showers - الفرق بين التدريب والتطبيق</p>
-                </div>
-            );
-
-            // Slide 3: The Solution
-            const Slide3 = () => (
-                <div className="h-full px-12 pt-8">
-                <h2 className="text-3xl font-bold text-[#006C35] mb-8">الحل: منهجية الكوتشينج</h2>
-                
-                <div className="grid grid-cols-2 gap-8 mt-8">
-                    <div className="bg-gray-50 p-6 rounded-xl border border-gray-200 opacity-70 print:opacity-100">
-                    <h3 className="text-xl font-bold text-gray-600 mb-6 flex items-center gap-2">
-                        <div className="w-2 h-8 bg-gray-400 rounded-full"></div>
-                        التوجيه التقليدي
-                    </h3>
-                    <ul className="space-y-4 text-gray-600 text-lg">
-                        <li className="flex items-center gap-3"><span className="text-red-400">✖</span> علاقة تبعية (رئيس/مرؤوس)</li>
-                        <li className="flex items-center gap-3"><span className="text-red-400">✖</span> تركيز على الملاحظات والأخطاء</li>
-                        <li className="flex items-center gap-3"><span className="text-red-400">✖</span> اعتماد كامل على الموجه الخارجي</li>
-                    </ul>
+                <p class="text-left text-xs text-gray-400 mt-12">* المصدر: دراسات Joyce & Showers - الفرق بين التدريب والتطبيق</p>
+            </div>
+            `,
+            // Slide 3
+            `
+            <div class="h-full px-12 pt-8 fade-in">
+                <h2 class="text-3xl font-bold text-[#006C35] mb-8">الحل: منهجية الكوتشينج</h2>
+                <div class="grid grid-cols-2 gap-8 mt-8">
+                    <div class="bg-gray-50 p-6 rounded-xl border border-gray-200 opacity-70">
+                        <h3 class="text-xl font-bold text-gray-600 mb-6 flex items-center gap-2"><div class="w-2 h-8 bg-gray-400 rounded-full"></div>التوجيه التقليدي</h3>
+                        <ul class="space-y-4 text-gray-600 text-lg">
+                            <li class="flex items-center gap-3"><span class="text-red-400">✖</span> علاقة تبعية (رئيس/مرؤوس)</li>
+                            <li class="flex items-center gap-3"><span class="text-red-400">✖</span> تركيز على الملاحظات والأخطاء</li>
+                            <li class="flex items-center gap-3"><span class="text-red-400">✖</span> اعتماد كامل على الموجه الخارجي</li>
+                        </ul>
                     </div>
-
-                    <div className="bg-white p-6 rounded-xl border-t-4 border-[#8DC63F] shadow-lg transform scale-105 print:transform-none print:shadow-none print:border">
-                    <h3 className="text-xl font-bold text-[#006C35] mb-6 flex items-center gap-2">
-                        <div className="w-2 h-8 bg-[#8DC63F] rounded-full"></div>
-                        الكوتشينج (التمكين)
-                    </h3>
-                    <ul className="space-y-4 text-gray-800 text-lg font-medium">
-                        <li className="flex items-center gap-3"><CheckCircle2 className="text-[#8DC63F]" size={20} /> علاقة شراكة واستقلالية</li>
-                        <li className="flex items-center gap-3"><CheckCircle2 className="text-[#8DC63F]" size={20} /> تركيز على بناء القدرات والحلول</li>
-                        <li className="flex items-center gap-3"><CheckCircle2 className="text-[#8DC63F]" size={20} /> بناء خبرات ذاتية داخل المدرسة</li>
-                    </ul>
+                    <div class="bg-white p-6 rounded-xl border-t-4 border-[#8DC63F] shadow-lg transform scale-105">
+                        <h3 class="text-xl font-bold text-[#006C35] mb-6 flex items-center gap-2"><div class="w-2 h-8 bg-[#8DC63F] rounded-full"></div>الكوتشينج (التمكين)</h3>
+                        <ul class="space-y-4 text-gray-800 text-lg font-medium">
+                            <li class="flex items-center gap-3 text-[#006C35]">✓ علاقة شراكة واستقلالية</li>
+                            <li class="flex items-center gap-3 text-[#006C35]">✓ تركيز على بناء القدرات والحلول</li>
+                            <li class="flex items-center gap-3 text-[#006C35]">✓ بناء خبرات ذاتية داخل المدرسة</li>
+                        </ul>
                     </div>
                 </div>
-                </div>
-            );
-
-            // Slide 4: Strategic Alignment
-            const Slide4 = () => (
-                <div className="h-full px-12 pt-8">
-                <h2 className="text-3xl font-bold text-[#006C35] mb-4">المواءمة مع مستهدفات "تمكين"</h2>
-                <p className="text-gray-600 mb-10">إسقاط أهداف برنامج تمكين الوطني على البيئة التعليمية</p>
-
-                <div className="grid grid-cols-3 gap-6">
-                    <div className="bg-white p-6 rounded-xl shadow border border-gray-100 flex flex-col items-center text-center print:shadow-none print:border">
-                    <div className="w-16 h-16 bg-blue-50 rounded-full flex items-center justify-center mb-4">
-                        <Target className="text-blue-600" size={32} />
+            </div>
+            `,
+            // Slide 4
+            `
+            <div class="h-full px-12 pt-8 fade-in">
+                <h2 class="text-3xl font-bold text-[#006C35] mb-4">المواءمة مع مستهدفات "تمكين"</h2>
+                <p class="text-gray-600 mb-10">إسقاط أهداف برنامج تمكين الوطني على البيئة التعليمية</p>
+                <div class="grid grid-cols-3 gap-6">
+                    <div class="bg-white p-6 rounded-xl shadow border border-gray-100 flex flex-col items-center text-center">
+                        <div class="w-16 h-16 bg-blue-50 rounded-full flex items-center justify-center mb-4"><svg class="text-blue-600" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg></div>
+                        <h3 class="font-bold text-[#006C35] mb-1">من الاحتياج إلى الإنتاج</h3>
+                        <p class="text-xs text-gray-400 mb-3">(هدف تمكين الرئيسي)</p>
+                        <div class="w-full h-px bg-gray-200 mb-3"></div>
+                        <p class="text-sm text-gray-800 font-bold leading-relaxed">تحويل المعلم من "مستهلك" للدورات التدريبية إلى "منتج" للممارسات التعليمية الناجحة.</p>
                     </div>
-                    <h3 className="font-bold text-[#006C35] mb-1">من الاحتياج إلى الإنتاج</h3>
-                    <p className="text-xs text-gray-400 mb-3">(هدف تمكين الرئيسي)</p>
-                    <div className="w-full h-px bg-gray-200 mb-3"></div>
-                    <p className="text-sm text-gray-800 font-bold leading-relaxed">تحويل المعلم من "مستهلك" للدورات التدريبية إلى "منتج" للممارسات التعليمية الناجحة.</p>
+                    <div class="bg-white p-6 rounded-xl shadow border border-gray-100 flex flex-col items-center text-center">
+                        <div class="w-16 h-16 bg-green-50 rounded-full flex items-center justify-center mb-4"><svg class="text-[#006C35]" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></svg></div>
+                        <h3 class="font-bold text-[#006C35] mb-1">الاعتماد على الذات</h3>
+                        <p class="text-xs text-gray-400 mb-3">(الاستدامة)</p>
+                        <div class="w-full h-px bg-gray-200 mb-3"></div>
+                        <p class="text-sm text-gray-800 font-bold leading-relaxed">تمكين المدارس من قيادة تطويرها المهني ذاتياً عبر "الكوتش الداخلي" دون انتظار الدعم الخارجي.</p>
                     </div>
-
-                    <div className="bg-white p-6 rounded-xl shadow border border-gray-100 flex flex-col items-center text-center print:shadow-none print:border">
-                    <div className="w-16 h-16 bg-green-50 rounded-full flex items-center justify-center mb-4">
-                        <TrendingUp className="text-[#006C35]" size={32} />
-                    </div>
-                    <h3 className="font-bold text-[#006C35] mb-1">الاعتماد على الذات</h3>
-                    <p className="text-xs text-gray-400 mb-3">(الاستدامة)</p>
-                    <div className="w-full h-px bg-gray-200 mb-3"></div>
-                    <p className="text-sm text-gray-800 font-bold leading-relaxed">تمكين المدارس من قيادة تطويرها المهني ذاتياً عبر "الكوتش الداخلي" دون انتظار الدعم الخارجي.</p>
-                    </div>
-
-                    <div className="bg-white p-6 rounded-xl shadow border border-gray-100 flex flex-col items-center text-center print:shadow-none print:border">
-                    <div className="w-16 h-16 bg-yellow-50 rounded-full flex items-center justify-center mb-4">
-                        <Briefcase className="text-yellow-600" size={32} />
-                    </div>
-                    <h3 className="font-bold text-[#006C35] mb-1">توفير الممكنات</h3>
-                    <p className="text-xs text-gray-400 mb-3">(التأهيل)</p>
-                    <div className="w-full h-px bg-gray-200 mb-3"></div>
-                    <p className="text-sm text-gray-800 font-bold leading-relaxed">تزويد المعلمين بأدوات الكوتشينج الحديثة التي تمكنهم من مواجهة تحديات الفصل بمهنية.</p>
+                    <div class="bg-white p-6 rounded-xl shadow border border-gray-100 flex flex-col items-center text-center">
+                        <div class="w-16 h-16 bg-yellow-50 rounded-full flex items-center justify-center mb-4"><svg class="text-yellow-600" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect width="20" height="14" x="2" y="7" rx="2" ry="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg></div>
+                        <h3 class="font-bold text-[#006C35] mb-1">توفير الممكنات</h3>
+                        <p class="text-xs text-gray-400 mb-3">(التأهيل)</p>
+                        <div class="w-full h-px bg-gray-200 mb-3"></div>
+                        <p class="text-sm text-gray-800 font-bold leading-relaxed">تزويد المعلمين بأدوات الكوتشينج الحديثة التي تمكنهم من مواجهة تحديات الفصل بمهنية.</p>
                     </div>
                 </div>
-                </div>
-            );
-
-            // Slide 5: Scope
-            const Slide5 = () => (
-                <div className="h-full px-12 pt-8 flex flex-col items-center">
-                <h2 className="text-3xl font-bold text-[#006C35] mb-8 w-full text-right">نطاق مشروع الكوتشينج</h2>
-                
-                <div className="relative w-full max-w-4xl mt-8">
-                    <div className="absolute top-1/2 left-0 w-full h-2 bg-gray-200 -translate-y-1/2 z-0 rounded"></div>
-                    
-                    <div className="relative z-10 flex justify-between w-full">
-                    <div className="flex flex-col items-center bg-white p-2">
-                        <div className="w-20 h-20 bg-white border-4 border-[#006C35] rounded-full flex items-center justify-center text-2xl font-bold text-[#006C35] shadow-lg print:shadow-none">
-                            50
+            </div>
+            `,
+            // Slide 5
+            `
+            <div class="h-full px-12 pt-8 flex flex-col items-center fade-in">
+                <h2 class="text-3xl font-bold text-[#006C35] mb-8 w-full text-right">نطاق مشروع الكوتشينج</h2>
+                <div class="relative w-full max-w-4xl mt-8">
+                    <div class="absolute top-1/2 left-0 w-full h-2 bg-gray-200 -translate-y-1/2 z-0 rounded"></div>
+                    <div class="relative z-10 flex justify-between w-full">
+                        <div class="flex flex-col items-center bg-white p-2">
+                            <div class="w-20 h-20 bg-white border-4 border-[#006C35] rounded-full flex items-center justify-center text-2xl font-bold text-[#006C35] shadow-lg">50</div>
+                            <p class="mt-4 font-bold text-gray-800">مدرسة (بيئة تمكين)</p>
                         </div>
-                        <p className="mt-4 font-bold text-gray-800">مدرسة (بيئة تمكين)</p>
-                    </div>
-
-                    <div className="flex flex-col items-center bg-white p-2">
-                        <div className="w-20 h-20 bg-white border-4 border-[#8DC63F] rounded-full flex items-center justify-center text-2xl font-bold text-[#8DC63F] shadow-lg print:shadow-none">
-                            70
+                        <div class="flex flex-col items-center bg-white p-2">
+                            <div class="w-20 h-20 bg-white border-4 border-[#8DC63F] rounded-full flex items-center justify-center text-2xl font-bold text-[#8DC63F] shadow-lg">70</div>
+                            <p class="mt-4 font-bold text-gray-800">كوتش (مُمكن)</p>
                         </div>
-                        <p className="mt-4 font-bold text-gray-800">كوتش (مُمكن)</p>
-                    </div>
-
-                    <div className="flex flex-col items-center bg-white p-2">
-                        <div className="w-20 h-20 bg-[#006C35] border-4 border-white rounded-full flex items-center justify-center text-2xl font-bold text-white shadow-lg print:shadow-none print:text-black print:border-[#006C35]">
-                            1
-                        </div>
-                        <p className="mt-4 font-bold text-gray-800">عام التأسيس</p>
-                    </div>
-                    </div>
-                </div>
-
-                <div className="mt-16 bg-blue-50 p-6 rounded-lg border border-blue-100 w-full text-center print:bg-white print:border-gray-300">
-                    <p className="text-blue-800 font-medium text-lg print:text-black">
-                    الغاية: تأسيس نموذج وطني للتمكين المهني داخل المدارس قابل للقياس والتعميم
-                    </p>
-                </div>
-                </div>
-            );
-
-            // Slide 6: Timeline
-            const Slide6 = () => (
-                <div className="h-full px-12 pt-8">
-                <h2 className="text-3xl font-bold text-[#006C35] mb-8">الجدول الزمني (مسار التمكين)</h2>
-                
-                <div className="flex flex-col gap-6 w-full">
-                    <div className="flex items-center gap-4">
-                    <div className="w-32 text-sm font-bold text-gray-600">الشهر 1-2</div>
-                    <div className="flex-1 bg-gray-100 rounded-full h-12 relative overflow-hidden print:border print:bg-white">
-                        <div className="absolute top-0 right-0 h-full bg-blue-500 w-[20%] flex items-center px-4 text-white font-bold text-sm shadow print:bg-blue-200 print:text-black print:shadow-none">
-                        الإعداد والتأهيل
+                        <div class="flex flex-col items-center bg-white p-2">
+                            <div class="w-20 h-20 bg-[#006C35] border-4 border-white rounded-full flex items-center justify-center text-2xl font-bold text-white shadow-lg">1</div>
+                            <p class="mt-4 font-bold text-gray-800">عام التأسيس</p>
                         </div>
                     </div>
-                    </div>
-
-                    <div className="flex items-center gap-4">
-                    <div className="w-32 text-sm font-bold text-gray-600">الشهر 3-6</div>
-                    <div className="flex-1 bg-gray-100 rounded-full h-12 relative overflow-hidden print:border print:bg-white">
-                        <div className="absolute top-0 right-[20%] h-full bg-[#006C35] w-[60%] flex items-center px-4 text-white font-bold text-sm shadow print:bg-green-200 print:text-black print:shadow-none">
-                        جلسات الكوتشينج (التمكين الميداني)
+                </div>
+                <div class="mt-16 bg-blue-50 p-6 rounded-lg border border-blue-100 w-full text-center">
+                    <p class="text-blue-800 font-medium text-lg">الغاية: تأسيس نموذج وطني للتمكين المهني داخل المدارس قابل للقياس والتعميم</p>
+                </div>
+            </div>
+            `,
+            // Slide 6
+            `
+            <div class="h-full px-12 pt-8 fade-in">
+                <h2 class="text-3xl font-bold text-[#006C35] mb-8">الجدول الزمني (مسار التمكين)</h2>
+                <div class="flex flex-col gap-6 w-full">
+                    <div class="flex items-center gap-4">
+                        <div class="w-32 text-sm font-bold text-gray-600">الشهر 1-2</div>
+                        <div class="flex-1 bg-gray-100 rounded-full h-12 relative overflow-hidden">
+                            <div class="absolute top-0 right-0 h-full bg-blue-500 w-[20%] flex items-center px-4 text-white font-bold text-sm shadow">الإعداد والتأهيل</div>
                         </div>
                     </div>
-                    </div>
-
-                    <div className="flex items-center gap-4">
-                    <div className="w-32 text-sm font-bold text-gray-600">الشهر 7</div>
-                    <div className="flex-1 bg-gray-100 rounded-full h-12 relative overflow-hidden print:border print:bg-white">
-                        <div className="absolute top-0 right-[80%] h-full bg-orange-500 w-[20%] flex items-center px-4 text-white font-bold text-sm shadow print:bg-orange-200 print:text-black print:shadow-none">
-                        قياس أثر التمكين
+                    <div class="flex items-center gap-4">
+                        <div class="w-32 text-sm font-bold text-gray-600">الشهر 3-6</div>
+                        <div class="flex-1 bg-gray-100 rounded-full h-12 relative overflow-hidden">
+                            <div class="absolute top-0 right-[20%] h-full bg-[#006C35] w-[60%] flex items-center px-4 text-white font-bold text-sm shadow">جلسات الكوتشينج (التمكين الميداني)</div>
                         </div>
                     </div>
+                    <div class="flex items-center gap-4">
+                        <div class="w-32 text-sm font-bold text-gray-600">الشهر 7</div>
+                        <div class="flex-1 bg-gray-100 rounded-full h-12 relative overflow-hidden">
+                            <div class="absolute top-0 right-[80%] h-full bg-orange-500 w-[20%] flex items-center px-4 text-white font-bold text-sm shadow">قياس أثر التمكين</div>
+                        </div>
                     </div>
                 </div>
-
-                <div className="mt-8 grid grid-cols-3 gap-4 text-sm text-gray-500">
-                    <div className="flex items-center gap-2"><div className="w-3 h-3 bg-blue-500 rounded-full print:bg-blue-200"></div> تأهيل الكوتشز ومنحهم أدوات التمكين</div>
-                    <div className="flex items-center gap-2"><div className="w-3 h-3 bg-[#006C35] rounded-full print:bg-green-200"></div> تنفيذ دورات الكوتشينج ودعم المعلمين</div>
-                    <div className="flex items-center gap-2"><div className="w-3 h-3 bg-orange-500 rounded-full print:bg-orange-200"></div> قياس تحول المعلم من الاحتياج للإنتاج</div>
+                <div class="mt-8 grid grid-cols-3 gap-4 text-sm text-gray-500">
+                    <div class="flex items-center gap-2"><div class="w-3 h-3 bg-blue-500 rounded-full"></div> تأهيل الكوتشز ومنحهم أدوات التمكين</div>
+                    <div class="flex items-center gap-2"><div class="w-3 h-3 bg-[#006C35] rounded-full"></div> تنفيذ دورات الكوتشينج ودعم المعلمين</div>
+                    <div class="flex items-center gap-2"><div class="w-3 h-3 bg-orange-500 rounded-full"></div> قياس تحول المعلم من الاحتياج للإنتاج</div>
                 </div>
-                </div>
-            );
-
-            // Slide 7: KPIs
-            const Slide7 = () => (
-                <div className="h-full px-12 pt-8">
-                <h2 className="text-3xl font-bold text-[#006C35] mb-8">مؤشرات نجاح التمكين (ROI)</h2>
-                
-                <div className="grid grid-cols-2 gap-8">
-                    <div className="bg-white p-6 rounded-lg shadow-md border-r-4 border-[#006C35] print:shadow-none print:border">
-                        <h3 className="font-bold text-lg text-gray-800 mb-2 flex items-center gap-2">
-                            <Target size={24} className="text-[#006C35]" />
-                            الكفاءة التدريسية
-                        </h3>
+            </div>
+            `,
+            // Slide 7
+            `
+            <div class="h-full px-12 pt-8 fade-in">
+                <h2 class="text-3xl font-bold text-[#006C35] mb-8">مؤشرات نجاح التمكين (ROI)</h2>
+                <div class="grid grid-cols-2 gap-8">
+                    <div class="bg-white p-6 rounded-lg shadow-md border-r-4 border-[#006C35]">
+                        <h3 class="font-bold text-lg text-gray-800 mb-2 flex items-center gap-2">الكفاءة التدريسية</h3>
                         <p className="text-gray-600 text-sm">ارتفاع مؤشر الممارسات الصفية الصحيحة (تحول المعلم لممارس خبير).</p>
-                        <div className="mt-4 flex gap-2">
-                            <span className="bg-green-100 text-green-800 text-xs px-2 py-1 rounded print:border">المستهدف: +20%</span>
-                        </div>
+                        <div className="mt-4 flex gap-2"><span class="bg-green-100 text-green-800 text-xs px-2 py-1 rounded">المستهدف: +20%</span></div>
                     </div>
-
-                    <div className="bg-white p-6 rounded-lg shadow-md border-r-4 border-[#8DC63F] print:shadow-none print:border">
-                        <h3 className="font-bold text-lg text-gray-800 mb-2 flex items-center gap-2">
-                            <BarChart3 size={24} className="text-[#8DC63F]" />
-                            الأثر على الطالب
-                        </h3>
+                    <div class="bg-white p-6 rounded-lg shadow-md border-r-4 border-[#8DC63F]">
+                        <h3 class="font-bold text-lg text-gray-800 mb-2 flex items-center gap-2">الأثر على الطالب</h3>
                         <p className="text-gray-600 text-sm">تحسن نواتج التعلم كنتيجة مباشرة لتمكين المعلم.</p>
                     </div>
-
-                    <div className="bg-white p-6 rounded-lg shadow-md border-r-4 border-yellow-500 print:shadow-none print:border">
-                        <h3 className="font-bold text-lg text-gray-800 mb-2 flex items-center gap-2">
-                            <Users size={24} className="text-yellow-500" />
-                            الاستقرار المهني
-                        </h3>
+                    <div class="bg-white p-6 rounded-lg shadow-md border-r-4 border-yellow-500">
+                        <h3 class="font-bold text-lg text-gray-800 mb-2 flex items-center gap-2">الاستقرار المهني</h3>
                         <p className="text-gray-600 text-sm">ارتفاع الرضا الوظيفي والشعور بالدعم (بيئة عمل جاذبة).</p>
                     </div>
-
-                    <div className="bg-white p-6 rounded-lg shadow-md border-r-4 border-blue-500 print:shadow-none print:border">
-                        <h3 className="font-bold text-lg text-gray-800 mb-2 flex items-center gap-2">
-                            <Calendar size={24} className="text-blue-500" />
-                            استدامة التنمية
-                        </h3>
+                    <div class="bg-white p-6 rounded-lg shadow-md border-r-4 border-blue-500">
+                        <h3 class="font-bold text-lg text-gray-800 mb-2 flex items-center gap-2">استدامة التنمية</h3>
                         <p className="text-gray-600 text-sm">قدرة المدرسة على توليد حلول ذاتية للتحديات التربوية.</p>
                     </div>
                 </div>
-                </div>
-            );
-
-            // Slide 8: Recommendations
-            const Slide8 = () => (
-                <div className="h-full px-12 pt-8">
-                <h2 className="text-3xl font-bold text-[#006C35] mb-8">التوصيات (قرار التمكين)</h2>
-                <div className="bg-[#006C35] bg-opacity-5 p-8 rounded-2xl border border-[#006C35] border-opacity-20 print:bg-white print:border-gray-300">
-                    <h3 className="text-xl font-bold text-gray-800 mb-6">لتحقيق أهداف التمكين في مدارسنا، نأمل:</h3>
-                    <ul className="space-y-6">
-                        <li className="flex items-start gap-4">
-                            <div className="w-8 h-8 bg-[#006C35] text-white rounded-full flex items-center justify-center font-bold flex-shrink-0 print:text-black print:border">1</div>
+            </div>
+            `,
+            // Slide 8
+            `
+            <div class="h-full px-12 pt-8 fade-in">
+                <h2 class="text-3xl font-bold text-[#006C35] mb-8">التوصيات (قرار التمكين)</h2>
+                <div class="bg-[#006C35] bg-opacity-5 p-8 rounded-2xl border border-[#006C35] border-opacity-20">
+                    <h3 class="text-xl font-bold text-gray-800 mb-6">لتحقيق أهداف التمكين في مدارسنا، نأمل:</h3>
+                    <ul class="space-y-6">
+                        <li class="flex items-start gap-4">
+                            <div class="w-8 h-8 bg-[#006C35] text-white rounded-full flex items-center justify-center font-bold flex-shrink-0">1</div>
                             <div>
                                 <h4 className="font-bold text-lg text-gray-800">اعتماد مشروع "الكوتشينج التعليمي"</h4>
                                 <p className="text-gray-600">كأحد مبادرات تمكين المعلم في 50 مدرسة تجريبية.</p>
                             </div>
                         </li>
-                        <li className="flex items-start gap-4">
-                            <div className="w-8 h-8 bg-[#006C35] text-white rounded-full flex items-center justify-center font-bold flex-shrink-0 print:text-black print:border">2</div>
+                        <li class="flex items-start gap-4">
+                            <div class="w-8 h-8 bg-[#006C35] text-white rounded-full flex items-center justify-center font-bold flex-shrink-0">2</div>
                             <div>
                                 <h4 className="font-bold text-lg text-gray-800">تسهيل مهام "الكوتش الممكن"</h4>
                                 <p className="text-gray-600">منح صلاحيات وتفريغ جزئي للمعلمين الخبراء لقيادة العملية.</p>
                             </div>
                         </li>
-                        <li className="flex items-start gap-4">
-                            <div className="w-8 h-8 bg-[#006C35] text-white rounded-full flex items-center justify-center font-bold flex-shrink-0 print:text-black print:border">3</div>
+                        <li class="flex items-start gap-4">
+                            <div class="w-8 h-8 bg-[#006C35] text-white rounded-full flex items-center justify-center font-bold flex-shrink-0">3</div>
                             <div>
                                 <h4 className="font-bold text-lg text-gray-800">تشكيل لجنة قياس الأثر</h4>
                                 <p className="text-gray-600">لضمان تحقيق مستهدفات التحول من الاحتياج إلى الإنتاج.</p>
@@ -414,105 +281,75 @@
                         </li>
                     </ul>
                 </div>
+            </div>
+            `,
+            // Slide 9
+            `
+            <div class="h-full flex flex-col justify-center items-center text-center space-y-8 p-8 fade-in">
+                <h1 class="text-4xl font-extrabold text-[#006C35] leading-snug max-w-4xl">"التمكين الحقيقي للمعلم يبدأ عندما يتحول<br />من متلقٍ للتوجيهات إلى قائد لنموه المهني"</h1>
+                <p class="text-xl text-gray-600">الكوتشينج التعليمي هو بوابتنا لهذا التحول.</p>
+                <div class="mt-12 text-right border-t pt-8 w-1/2">
+                    <p class="text-sm text-gray-500">للتواصل والاستفسار:</p>
+                    <p class="text-xl font-bold text-[#006C35] mt-1">محمد علي عبدالله عسيري</p>
+                    <p class="text-md text-gray-600">معلم خبير | كوتش محترف (PCC)</p>
                 </div>
-            );
-
-            // Slide 9: Closing
-            const Slide9 = () => (
-                <div className="h-full flex flex-col justify-center items-center text-center space-y-8 p-8">
-                <h1 className="text-4xl font-extrabold text-[#006C35] leading-snug max-w-4xl">
-                    "التمكين الحقيقي للمعلم يبدأ عندما يتحول<br />من متلقٍ للتوجيهات إلى قائد لنموه المهني"
-                </h1>
-                <p className="text-xl text-gray-600">
-                    الكوتشينج التعليمي هو بوابتنا لهذا التحول.
-                </p>
-                
-                <div className="mt-12 text-right border-t pt-8 w-1/2 print:w-full">
-                    <p className="text-sm text-gray-500">للتواصل والاستفسار:</p>
-                    <p className="text-xl font-bold text-[#006C35] mt-1">محمد علي عبدالله عسيري</p>
-                    <p className="text-md text-gray-600">معلم خبير | كوتش محترف (PCC)</p>
+                <div class="mt-8">
+                    <button class="px-6 py-2 bg-[#006C35] text-white rounded hover:bg-green-800 transition-colors">شكراً لاستماعكم</button>
                 </div>
+            </div>
+            `
+        ];
 
-                <div className="mt-8 print:hidden">
-                    <button className="px-6 py-2 bg-[#006C35] text-white rounded hover:bg-green-800 transition-colors">
-                        شكراً لاستماعكم
-                    </button>
+        let currentSlide = 0;
+        const totalSlides = slidesData.length;
+        const contentDiv = document.getElementById('slide-content');
+        const countSpan = document.getElementById('current-slide-num');
+
+        // Render Initial
+        function renderSlide() {
+            contentDiv.innerHTML = slidesData[currentSlide];
+            countSpan.innerText = currentSlide + 1;
+        }
+
+        // Navigation
+        function nextSlide() {
+            if (currentSlide < totalSlides - 1) {
+                currentSlide++;
+                renderSlide();
+            }
+        }
+
+        function prevSlide() {
+            if (currentSlide > 0) {
+                currentSlide--;
+                renderSlide();
+            }
+        }
+
+        // Keyboard Support
+        window.addEventListener('keydown', (e) => {
+            if (e.key === 'ArrowLeft' || e.key === ' ') nextSlide();
+            if (e.key === 'ArrowRight') prevSlide();
+        });
+
+        // Print Setup (Pre-render all slides hiddenly)
+        const printContainer = document.getElementById('print-container');
+        slidesData.forEach((html, index) => {
+            const slidePage = document.createElement('div');
+            slidePage.className = 'slide-container border-b relative p-8';
+            slidePage.innerHTML = `
+                <div class="flex justify-between items-center py-4 px-8 border-b-4 border-[#006C35] bg-white">
+                    <div class="flex flex-col text-right"><span class="text-sm font-bold text-[#006C35]">وزارة التعليم</span></div>
+                    <div class="h-10 w-10 bg-[#006C35] rounded-full flex items-center justify-center text-white font-bold text-xs">MOE</div>
                 </div>
-                </div>
-            );
+                <div class="p-12">${html}</div>
+                <div class="text-center text-gray-400 text-xs mt-auto">شريحة ${index + 1}</div>
+            `;
+            printContainer.appendChild(slidePage);
+        });
 
-            const slides = [Slide1, Slide2, Slide3, Slide4, Slide5, Slide6, Slide7, Slide8, Slide9];
-            const CurrentSlideComponent = slides[currentSlide];
-
-            return (
-                <div className="flex flex-col items-center justify-center min-h-screen font-sans p-4 print:p-0 print:bg-white">
-                
-                {/* --- INTERACTIVE MODE (Screen) --- */}
-                <div className="relative w-full max-w-5xl aspect-video bg-white rounded-xl shadow-2xl overflow-hidden flex flex-col no-print">
-                    
-                    <Header />
-
-                    <div className="flex-1 relative overflow-hidden bg-white bg-[radial-gradient(#e5e7eb_1px,transparent_1px)] [background-size:16px_16px]">
-                    <div className="absolute inset-0 p-8 animate-fadeIn">
-                        <CurrentSlideComponent />
-                    </div>
-                    </div>
-
-                    <Footer slideNum={currentSlide + 1} />
-
-                    {/* Navigation Controls */}
-                    <div className="absolute bottom-4 left-8 flex gap-2 z-50">
-                    {/* Print Button */}
-                    <button 
-                        onClick={handlePrint}
-                        className="p-2 rounded-full bg-gray-700 text-white hover:bg-gray-900 transition-all shadow-lg mr-2"
-                        title="حفظ كـ PDF"
-                    >
-                        <Printer size={24} />
-                    </button>
-
-                    <button 
-                        onClick={prevSlide} 
-                        disabled={currentSlide === 0}
-                        className={`p-2 rounded-full ${currentSlide === 0 ? 'bg-gray-200 text-gray-400' : 'bg-[#006C35] text-white hover:bg-green-800'} transition-all shadow-lg`}
-                    >
-                        <ChevronRight size={24} />
-                    </button>
-                    
-                    <button 
-                        onClick={nextSlide} 
-                        disabled={currentSlide === totalSlides - 1}
-                        className={`p-2 rounded-full ${currentSlide === totalSlides - 1 ? 'bg-gray-200 text-gray-400' : 'bg-[#006C35] text-white hover:bg-green-800'} transition-all shadow-lg`}
-                    >
-                        <ChevronLeft size={24} />
-                    </button>
-                    </div>
-                </div>
-
-                {/* --- PRINT MODE (Hidden on Screen, Visible on Print) --- */}
-                <div className="print-only w-full">
-                    {slides.map((SlideComponent, index) => (
-                    <div key={index} className="slide-page border-b relative">
-                        <Header />
-                        <div className="flex-1 p-12">
-                        <SlideComponent />
-                        </div>
-                        <div className="p-4 text-center text-xs text-gray-400 border-t">
-                        شريحة {index + 1}
-                        </div>
-                    </div>
-                    ))}
-                </div>
-
-                <div className="mt-4 text-gray-500 text-sm no-print">
-                    استخدم زر الطابعة (أو Ctrl+P) لحفظ العرض كملف PDF.
-                </div>
-                </div>
-            );
-        };
-
-        const root = ReactDOM.createRoot(document.getElementById('root'));
-        root.render(<SlideDeck />);
+        // Init
+        renderSlide();
     </script>
 </body>
 </html>
